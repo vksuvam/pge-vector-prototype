@@ -1,0 +1,28 @@
+# Data & Documents — do not commit PDFs
+# data/*.pdf
+data/**/*.pdf
+
+# Qdrant local storage — generated at runtime after ingestion
+qdrant_storage/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables — never commit API keys
+.env
+
+# Red team report output
+redteam/report.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
