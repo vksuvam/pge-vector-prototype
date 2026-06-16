@@ -7,12 +7,12 @@ from typing import List
 class RAGRequest(BaseModel):
     query: str
     model: str
-    ragapproach: str = "vector_search"   # hardcoded default; UI can send anything, backend ignores it
+    ragapproach: str = "vector_search"
 
     class Config:
         json_schema_extra = {
             "example": {
-                "query": "How do I apply for new electric service?",
+                "query": "What are the clearance requirements for transformers?",
                 "model": "llama-3.3-70b-versatile",
                 "ragapproach": "vector_search"
             }
@@ -22,53 +22,31 @@ class RAGRequest(BaseModel):
 # ── Response ──────────────────────────────────────────────────────────────────
 
 class Source(BaseModel):
-    title: str       # Document name + section heading if available
-    url: str         # Page-level deep link: "file:///abs/path/to/doc.pdf#page=42" or HTTP URL
-    pageno: str      # Page number as string (e.g. "42" or "42-43" for multi-page chunks)
+    title: str
+    url: str        # e.g. "/docs/greenbook-manual-full.pdf#page=45"
+    pageno: str
+
+
+class ImageResult(BaseModel):
+    image_base64: str   # "data:image/png;base64,..." — drop directly into <img src>
 
 
 class Metadata(BaseModel):
     retrievaltimems: int
     generationtimems: int
     totaltimems: int
-    generatedat: str       # ISO 8601 datetime string
+    generatedat: str
     inputtokens: int
     outputtokens: int
     totaltokens: int
     modelused: str
-    retrievalmethod: str   # always "vector_search" for this prototype
+    retrievalmethod: str
 
 
 class RAGResponse(BaseModel):
-    status: str            # "success" | "error"
+    status: str
     query: str
     answer: str
     sources: List[Source]
+    images: List[ImageResult]   # empty list if no relevant images found
     metadata: Metadata
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "status": "success",
-                "query": "How do I apply for new electric service?",
-                "answer": "To apply for new electric service, follow these steps: ...",
-                "sources": [
-                    {
-                        "title": "PG&E Greenbook - Chapter 3: New Service Applications",
-                        "url": "file:///data/greenbook.pdf#page=45",
-                        "pageno": "45"
-                    }
-                ],
-                "metadata": {
-                    "retrievaltimems": 120,
-                    "generationtimems": 890,
-                    "totaltimems": 1010,
-                    "generatedat": "2026-06-12T10:30:00Z",
-                    "inputtokens": 1200,
-                    "outputtokens": 350,
-                    "totaltokens": 1550,
-                    "modelused": "llama-3.3-70b-versatile",
-                    "retrievalmethod": "vector_search"
-                }
-            }
-        }

@@ -1,7 +1,6 @@
 """
 pdf_parser.py
 Extracts text page-by-page from PDFs, preserving page numbers and source metadata.
-Each returned dict represents one page and is the unit passed to the chunker.
 """
 
 import os
@@ -13,12 +12,17 @@ import pdfplumber
 
 def _make_page_url(pdf_path: str, page_number: int) -> str:
     """
-    Builds a page-level deep link URL.
-    - For local files: file:///absolute/path/to/doc.pdf#page=N
-    - If you later store PDFs behind an HTTP server, swap the base URL here.
+    Builds a relative URL for the page, served via FastAPI static files mount.
+    Greenbook:  /docs/greenbook-manual-full.pdf#page=45
+    Tariffs:    /docs/tariffs/E-1.pdf#page=3
     """
-    abs_path = Path(pdf_path).resolve()
-    return f"file:///{abs_path}#page={page_number}"
+    filename = Path(pdf_path).name
+    parent = Path(pdf_path).parent.name
+
+    if parent == "tariffs":
+        return f"/docs/tariffs/{filename}#page={page_number}"
+    else:
+        return f"/docs/{filename}#page={page_number}"
 
 
 def parse_pdf(pdf_path: str) -> List[Dict[str, Any]]:
@@ -27,19 +31,17 @@ def parse_pdf(pdf_path: str) -> List[Dict[str, Any]]:
 
     Each record:
     {
-        "text":      str,   # raw text of the page
-        "page_no":   int,   # 1-based page number
+        "text":      str,
+        "page_no":   int,   # 1-based
         "source":    str,   # absolute file path
-        "doc_name":  str,   # filename without extension, e.g. "greenbook"
-        "url":       str,   # page-level deep link
+        "doc_name":  str,   # filename without extension
+        "url":       str,   # /docs/... clickable link
     }
-
-    Pages with no extractable text (e.g. scanned images) are skipped with a warning.
     """
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
-    doc_name = Path(pdf_path).stem  # "greenbook" or "tariff"
+    doc_name = Path(pdf_path).stem
     pages = []
 
     with pdfplumber.open(pdf_path) as pdf:
@@ -47,7 +49,7 @@ def parse_pdf(pdf_path: str) -> List[Dict[str, Any]]:
         print(f"[Parser] {doc_name}: {total} pages found")
 
         for i, page in enumerate(pdf.pages):
-            page_no = i + 1  # pdfplumber is 0-indexed internally
+            page_no = i + 1
             text = page.extract_text()
 
             if not text or not text.strip():
@@ -77,7 +79,6 @@ def parse_all_pdfs(pdf_paths: List[str]) -> List[Dict[str, Any]]:
 def get_tariff_pdfs(tariff_dir: str, max_docs: int) -> List[str]:
     """
     Returns sorted list of tariff PDF paths, capped at max_docs.
-    Sorting by filename makes selection deterministic and reproducible.
     """
     if not os.path.exists(tariff_dir):
         raise FileNotFoundError(

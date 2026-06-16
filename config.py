@@ -6,28 +6,29 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 QDRANT_STORAGE_PATH = os.path.join(BASE_DIR, "qdrant_storage")
+IMAGES_DIR = os.path.join(DATA_DIR, "images")   # extracted PDF images stored here
 
-GREENBOOK_PDF = os.path.join(DATA_DIR, "greenbook.pdf")
-TARIFF_DIR = os.path.join(DATA_DIR, "tariffs")   # folder containing all tariff PDFs
-MAX_TARIFF_DOCS = 50                               # sorted by filename, first N used
+GREENBOOK_PDF = os.path.join(DATA_DIR, "greenbook-manual-full.pdf")
+TARIFF_DIR = os.path.join(DATA_DIR, "tariffs")
+MAX_TARIFF_DOCS = 50
 
 # --- Qdrant ---
 QDRANT_COLLECTION_NAME = "spd_knowledge_base"
-EMBEDDING_DIM = 384  # matches all-MiniLM-L6-v2; change if you switch model
+QDRANT_IMAGE_COLLECTION_NAME = "spd_images"   # separate collection for image captions
+EMBEDDING_DIM = 384  # matches all-MiniLM-L6-v2
 
 # --- Embedding Model ---
-# Use BAAI/bge-large-en-v1.5 for better quality on technical docs (dim=1024, update EMBEDDING_DIM)
-# Use all-MiniLM-L6-v2 for faster local runs (dim=384)
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 # --- Chunking ---
-CHUNK_SIZE = 512        # tokens per chunk
-CHUNK_OVERLAP = 64      # overlap between consecutive chunks
+CHUNK_SIZE = 512
+CHUNK_OVERLAP = 64
 
 # --- Retrieval ---
-TOP_K = 6               # number of chunks to retrieve
+TOP_K = 6
+TOP_K_IMAGES = 3    # max images to return per response
 
-# --- Groq Models ---
+# --- Groq Models (text) ---
 GROQ_MODELS = {
     "llama-3.3-70b-versatile": "Best quality, general Q&A",
     "llama-3.1-8b-instant": "Fast, lightweight responses",
@@ -36,11 +37,13 @@ GROQ_MODELS = {
 }
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
+# --- Groq Vision Model (for image captioning during ingestion) ---
+GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+
 # --- RAG ---
-RAG_APPROACH = "vector_search"  # hardcoded per requirement
+RAG_APPROACH = "vector_search"
 
 # --- Process/Steps Detection ---
-# Keywords that trigger verbatim full-process return (no summarization)
 PROCESS_KEYWORDS = [
     "steps", "procedure", "process", "how to", "how do i", "how do we",
     "instructions", "guide me", "walk me through", "what do i need to do",
@@ -49,4 +52,4 @@ PROCESS_KEYWORDS = [
 ]
 
 # --- Groq API ---
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # set in environment
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
