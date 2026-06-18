@@ -137,7 +137,7 @@ def extract_images_from_pdf(pdf_path: str) -> List[Dict[str, Any]]:
                     })
 
                     # Small delay to avoid Groq rate limits
-                    time.sleep(0.5)
+                    time.sleep(0.2)
 
                 except Exception as e:
                     print(f"[ImageExtractor] Failed on {doc_name} p{page_no} img{img_idx}: {e}")

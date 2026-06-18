@@ -39,7 +39,7 @@ app.add_middleware(
 
 os.makedirs("data", exist_ok=True)
 app.mount("/docs", StaticFiles(directory="data"), name="docs")
-
+app.mount("/", StaticFiles(directory="ui", html=True), name="ui")
 # Serve PDFs and images from data/ folder
 # /docs/greenbook-manual-full.pdf#page=45  → opens PDF at page 45 in browser
 app.mount("/docs", StaticFiles(directory=DATA_DIR), name="docs")

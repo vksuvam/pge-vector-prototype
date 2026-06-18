@@ -33,14 +33,14 @@ GROQ_MODELS = {
     "llama-3.3-70b-versatile": "Best quality, general Q&A",
     "llama-3.1-8b-instant": "Fast, lightweight responses",
     "mixtral-8x7b-32768": "Long context, multi-chunk synthesis",
-    "gemma2-9b-it": "Alternative for benchmarking",
+    "gemma2-9b-it": "Alternative for benchmarking"
 }
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 # --- Groq Vision Model (for image captioning during ingestion) ---
-GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-# GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"  # or another vision model Groq supports
-# IMAGE_SIMILARITY_THRESHOLD = 0.35  # (or tune based on your testing)
+# GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+GROQ_VISION_MODEL = "llama-3.2-90b-vision-preview"  # or another vision model Groq supports
+IMAGE_SIMILARITY_THRESHOLD = 0.35  # (or tune based on your testing)
 
 # --- RAG ---
 RAG_APPROACH = "vector_search"

@@ -33,7 +33,7 @@ def _get_model() -> SentenceTransformer:
         _embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
     return _embedding_model
 
-TEXT_SIMILARITY_THRESHOLD = 0.4  # Minimum cosine similarity for text chunks
+TEXT_SIMILARITY_THRESHOLD = 0.25  # Minimum cosine similarity for text chunks
 
 def retrieve(query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
     """
@@ -68,7 +68,7 @@ def retrieve(query: str, top_k: int = TOP_K) -> List[Dict[str, Any]]:
         if hit.score < TEXT_SIMILARITY_THRESHOLD:
             print(f"[Retrieval] Skipping low-score chunk (score={hit.score})")
             continue
-        
+
         payload = hit.payload
         chunks.append({
             "text": payload.get("text", ""), 

@@ -33,7 +33,7 @@ _embedding_model: SentenceTransformer = None
 
 # Minimum similarity score for an image to be returned
 # Below this threshold, the image caption isn't relevant enough to the query
-IMAGE_SIMILARITY_THRESHOLD = 0.2    
+IMAGE_SIMILARITY_THRESHOLD = 0.35    
 
 
 def _get_client() -> QdrantClient:
