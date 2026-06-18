@@ -1,14 +1,22 @@
 ---
+<<<<<<< HEAD
 title: VectorRAG
 emoji: 🚀
+=======
+title: Vector RAG
+emoji: 🦀
+>>>>>>> 14e99041456010573ddf8a60471e92de3d070145
 colorFrom: blue
 colorTo: green
 sdk: docker
 app_port: 7860
 pinned: false
 ---
+<<<<<<< HEAD
 
 # SP&D RAG Prototype — Vector Search
+=======
+>>>>>>> 14e99041456010573ddf8a60471e92de3d070145
 
 PG&E SP&D AI Platform POC  
 RAG approach: **Vector Search** (Qdrant + sentence-transformers + Groq)
