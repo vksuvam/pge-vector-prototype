@@ -44,6 +44,12 @@ app.mount("/docs", StaticFiles(directory="data"), name="docs")
 # /docs/greenbook-manual-full.pdf#page=45  → opens PDF at page 45 in browser
 app.mount("/docs", StaticFiles(directory=DATA_DIR), name="docs")
 
+@app.get("/")
+def root():
+    return {
+        "status": "healthy",
+        "service": "PGE Vector RAG"
+    }
 
 @app.get("/health")
 async def health():
