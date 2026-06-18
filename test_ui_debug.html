@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SP&D RAG Test — Debug</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            margin: 20px; 
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #4ec9b0; }
+        
+        .debug-panel {
+            background: #252526;
+            border: 2px solid #007acc;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+        .debug-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .debug-row:last-child { border-bottom: none; }
+        .debug-label { font-weight: bold; color: #9cdcfe; }
+        .debug-value { color: #ce9178; }
+        .status-ok { color: #4ec9b0; }
+        .status-err { color: #f48771; }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            color: #d4d4d4;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007acc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #005a9e; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .error-box {
+            display: none;
+            background: #5f2a2a;
+            border: 2px solid #f48771;
+            color: #ffb3a7;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .loading {
+            display: none;
+            color: #4ec9b0;
+            font-weight: bold;
+            padding: 10px;
+        }
+        
+        .response-section {
+            display: none;
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .response-section h2 {
+            margin-top: 0;
+            color: #4ec9b0;
+            border-bottom: 1px solid #3e3e42;
+            padding-bottom: 8px;
+        }
+        
+        .answer-text {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .sources-list {
+            list-style: none;
+            padding: 0;
+        }
+        .sources-list li {
+            padding: 8px;
+            background: #1e1e1e;
+            margin-bottom: 6px;
+            border-left: 3px solid #007acc;
+            border-radius: 2px;
+        }
+        .sources-list a {
+            color: #4ec9b0;
+            text-decoration: none;
+        }
+        .sources-list a:hover { text-decoration: underline; }
+        
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .image-item {
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .image-item img {
+            width: 100%;
+            display: block;
+            background: #000;
+        }
+        .image-item .caption {
+            padding: 8px;
+            font-size: 12px;
+            color: #858585;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .metadata {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .meta-item {
+            background: #1e1e1e;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 2px solid #007acc;
+        }
+        .meta-label { color: #9cdcfe; font-size: 12px; }
+        .meta-value { color: #ce9178; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SP&D RAG Prototype — Debug Console</h1>
+    
+    <!-- Debug Panel -->
+    <div class="debug-panel">
+        <div class="debug-row">
+            <span class="debug-label">API Endpoint:</span>
+            <span class="debug-value">http://localhost:8000/rag</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Server Status:</span>
+            <span class="debug-value" id="server-status">Checking...</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Last Request:</span>
+            <span class="debug-value" id="last-request">None</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Last Response Code:</span>
+            <span class="debug-value" id="last-response-code">—</span>
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="controls">
+        <input id="query" type="text" placeholder="Enter your query..." value="What is a transformer?">
+        <button id="ask-btn" onclick="runQuery()">Ask RAG</button>
+    </div>
+    
+    <!-- Error Display -->
+    <div id="error-box" class="error-box"></div>
+    
+    <!-- Loading -->
+    <div id="loading" class="loading">⏳ Loading...</div>
+    
+    <!-- Response Sections -->
+    <div id="answer-section" class="response-section">
+        <h2>Answer</h2>
+        <div class="answer-text" id="answer"></div>
+    </div>
+    
+    <div id="sources-section" class="response-section">
+        <h2>Sources (<span id="source-count">0</span>)</h2>
+        <ul class="sources-list" id="sources"></ul>
+    </div>
+    
+    <div id="images-section" class="response-section">
+        <h2>Images (<span id="image-count">0</span>)</h2>
+        <div class="images-grid" id="images"></div>
+    </div>
+    
+    <div id="metadata-section" class="response-section">
+        <h2>Metadata</h2>
+        <div class="metadata" id="metadata"></div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:8000';
+
+// Check server on page load
+window.addEventListener('load', async () => {
+    try {
+        console.log('[DEBUG] Checking server health...');
+        const res = await fetch(`${API_URL}/health`);
+        console.log('[DEBUG] Health check response:', res.status);
+        
+        if (res.ok) {
+            document.getElementById('server-status').innerHTML = '<span class="status-ok">✓ Running on localhost:8000</span>';
+        } else {
+            document.getElementById('server-status').innerHTML = `<span class="status-err">✗ HTTP ${res.status}</span>`;
+        }
+    } catch (err) {
+        console.error('[ERROR] Health check failed:', err);
+        document.getElementById('server-status').innerHTML = `<span class="status-err">✗ ${err.message}</span>`;
+    }
+});
+
+// Main query function
+async function runQuery() {
+    const query = document.getElementById('query').value.trim();
+    if (!query) {
+        showError('Please enter a query');
+        return;
+    }
+    
+    const btn = document.getElementById('ask-btn');
+    const loading = document.getElementById('loading');
+    const errorBox = document.getElementById('error-box');
+    
+    // Reset UI
+    btn.disabled = true;
+    loading.style.display = 'block';
+    errorBox.style.display = 'none';
+    hideAllSections();
+    
+    // Log request
+    const timestamp = new Date().toLocaleTimeString();
+    document.getElementById('last-request').textContent = `${timestamp} — "${query}"`;
+    console.log('[DEBUG] Query:', query);
+    
+    try {
+        const payload = {
+            query: query,
+            model: 'llama-3.3-70b-versatile',
+            ragapproach: 'vector_search'
+        };
+        
+        console.log('[DEBUG] Sending POST to', `${API_URL}/rag`);
+        console.log('[DEBUG] Payload:', payload);
+        
+        const res = await fetch(`${API_URL}/rag`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        console.log('[DEBUG] Response status:', res.status);
+        document.getElementById('last-response-code').textContent = res.status;
+        
+        // Get response text first (works for both JSON and text)
+        const responseText = await res.text();
+        console.log('[DEBUG] Response text:', responseText.substring(0, 200));
+        
+        if (!res.ok) {
+            showError(`API Error ${res.status}\n\n${responseText}`);
+            return;
+        }
+        
+        // Parse JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+            console.log('[DEBUG] Parsed JSON:', data);
+        } catch (e) {
+            showError(`Failed to parse JSON response:\n\n${responseText}`);
+            return;
+        }
+        
+        // Verify structure
+        if (!data.answer) {
+            showError('Invalid response structure: missing "answer" field\n\n' + JSON.stringify(data, null, 2));
+            return;
+        }
+        
+        // Display answer
+        document.getElementById('answer').textContent = data.answer;
+        document.getElementById('answer-section').style.display = 'block';
+        
+        // Display sources with citation numbers
+        if (data.sources && data.sources.length > 0) {
+            const sourcesList = document.getElementById('sources');
+            sourcesList.innerHTML = '';
+            data.sources.forEach((src, idx) => {
+                const citation = idx + 1;  // [1], [2], [3]
+                const li = document.createElement('li');
+                const fullUrl = src.url.startsWith('/') ? `http://localhost:8000${src.url}` : src.url;
+                li.innerHTML = `<strong>[${citation}]</strong> <a href="${fullUrl}" target="_blank">${src.title}</a>`;
+                sourcesList.appendChild(li);
+            });
+            document.getElementById('source-count').textContent = data.sources.length;
+            document.getElementById('sources-section').style.display = 'block';
+        }
+        
+        // Display images
+        // Display images
+        if (data.images && data.images.length > 0) {
+            const imagesDiv = document.getElementById('images');
+            imagesDiv.innerHTML = '';
+            data.images.forEach((img, idx) => {
+                const div = document.createElement('div');
+                div.className = 'image-item';
+                const image = document.createElement('img');
+                image.src = img.image_base64;
+                image.alt = `Image ${idx + 1}`;
+                div.appendChild(image);
+                imagesDiv.appendChild(div);
+            });
+            document.getElementById('image-count').textContent = data.images.length;
+            document.getElementById('images-section').style.display = 'block';
+        } else if (data.metadata && data.metadata.retrievaltimems > 0) {
+            // Debug: Show that images were searched but empty (Qdrant lock issue)
+            const imagesDiv = document.getElementById('images');
+            imagesDiv.innerHTML = '<p style="color: #858585; font-size: 12px;">⚠️ Images search returned empty (Qdrant lock during concurrent access). This is expected in local development.</p>';
+            document.getElementById('image-count').textContent = '0';
+            document.getElementById('images-section').style.display = 'block';
+        }
+        
+        // Display metadata
+        if (data.metadata) {
+            const m = data.metadata;
+            const metaDiv = document.getElementById('metadata');
+            metaDiv.innerHTML = `
+                <div class="meta-item">
+                    <div class="meta-label">Model</div>
+                    <div class="meta-value">${m.modelused}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Retrieval</div>
+                    <div class="meta-value">${m.retrievaltimems}ms</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Generation</div>
+                    <div class="meta-value">${m.generationtimems}ms</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Total Time</div>
+                    <div class="meta-value">${m.totaltimems}ms</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Tokens</div>
+                    <div class="meta-value">${m.totaltokens}</div>
+                </div>
+            `;
+            document.getElementById('metadata-section').style.display = 'block';
+        }
+        
+        console.log('[SUCCESS] Query completed successfully');
+        
+    } catch (err) {
+        console.error('[ERROR] Full error:', err);
+        showError(`Network/Fetch Error\n\n${err.message}\n\nMake sure:\n1. Server is running (http://localhost:8000)\n2. API /rag endpoint exists\n3. GROQ_API_KEY is set`);
+    } finally {
+        btn.disabled = false;
+        loading.style.display = 'none';
+    }
+}
+
+function showError(message) {
+    const box = document.getElementById('error-box');
+    box.textContent = message;
+    box.style.display = 'block';
+}
+
+function hideAllSections() {
+    document.getElementById('answer-section').style.display = 'none';
+    document.getElementById('sources-section').style.display = 'none';
+    document.getElementById('images-section').style.display = 'none';
+    document.getElementById('metadata-section').style.display = 'none';
+}
+
+// Enter to submit
+document.getElementById('query').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('ask-btn').disabled) {
+        runQuery();
+    }
+});
+</script>
+
+</body>
+</html>

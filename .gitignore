@@ -1,6 +1,7 @@
 # Data & Documents — do not commit PDFs
 # data/*.pdf
 data/**/*.pdf
+data/images/
 
 # Qdrant local storage — generated at runtime after ingestion
 qdrant_storage/

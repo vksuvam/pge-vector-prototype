@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAG Test</title>
+    <style>
+        body { font-family: monospace; margin: 20px; }
+        .answer { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .images { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+        img { max-width: 100%; border: 1px solid #ccc; }
+        input { width: 300px; padding: 8px; }
+        button { padding: 8px 15px; }
+    </style>
+</head>
+<body>
+
+<h1>SP&D RAG Test</h1>
+
+<input id="query" type="text" placeholder="Enter your query..." value="What is the architecture of a service connection?">
+<button onclick="runQuery()">Ask</button>
+
+<div id="loading" style="display:none;">Loading...</div>
+<div id="result" style="display:none;">
+    <h2>Answer</h2>
+    <div class="answer" id="answer"></div>
+    
+    <h2>Sources</h2>
+    <ul id="sources"></ul>
+    
+    <h2>Images</h2>
+    <div class="images" id="images"></div>
+    
+    <h2>Metadata</h2>
+    <pre id="metadata"></pre>
+</div>
+
+<script>
+async function runQuery() {
+    const query = document.getElementById('query').value;
+    const loading = document.getElementById('loading');
+    const result = document.getElementById('result');
+    
+    loading.style.display = 'block';
+    result.style.display = 'none';
+    
+    try {
+        const res = await fetch('http://localhost:8000/rag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query,
+                model: 'llama-3.3-70b-versatile',
+                ragapproach: 'vector_search'
+            })
+        });
+        
+        const data = await res.json();
+        
+        // Display answer
+        document.getElementById('answer').textContent = data.answer;
+        
+        // Display sources
+        const sourcesList = document.getElementById('sources');
+        sourcesList.innerHTML = '';
+        data.sources.forEach(src => {
+            const li = document.createElement('li');
+            li.innerHTML = `<a href="${src.url}" target="_blank">${src.title}</a>`;
+            sourcesList.appendChild(li);
+        });
+        
+        // Display images
+        const imagesDiv = document.getElementById('images');
+        imagesDiv.innerHTML = '';
+        data.images.forEach(img => {
+            const div = document.createElement('div');
+            const image = document.createElement('img');
+            image.src = img.image_base64;
+            div.appendChild(image);
+            imagesDiv.appendChild(div);
+        });
+        
+        // Display metadata
+        document.getElementById('metadata').textContent = JSON.stringify(data.metadata, null, 2);
+        
+        result.style.display = 'block';
+        
+    } catch (err) {
+        alert('Error: ' + err.message);
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+// Run on enter
+document.getElementById('query').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runQuery();
+});
+</script>
+
+</body>
+</html> 
