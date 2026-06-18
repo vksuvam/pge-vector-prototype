@@ -1,4 +1,12 @@
-# SP&D RAG Prototype — Vector Search
+---
+title: Vector RAG
+emoji: 🦀
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
 
 PG&E SP&D AI Platform POC  
 RAG approach: **Vector Search** (Qdrant + sentence-transformers + Groq)
