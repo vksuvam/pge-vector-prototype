@@ -31,8 +31,9 @@ TOP_K_IMAGES = 3    # max images to return per response
 # --- Groq Models (text) ---
 GROQ_MODELS = {
     "llama-3.3-70b-versatile": "Best quality, general Q&A",
-    "llama-3.1-8b-instant": "Fast, lightweight responses",
-    "gemma2-9b-it": "Alternative for benchmarking"
+    "GPT-OSS-120B": "Open-weight reasoning model",
+    "llama-4-scout-17b-16e-instruct": "Multimodal MoE assistant",
+    "qwen3.6-27b" : "Dense coding & reasoning model"
 }
 DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
@@ -40,7 +41,7 @@ DEFAULT_MODEL = "llama-3.3-70b-versatile"
 # GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 # GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
 # GROQ_VISION_MODEL = "openai/gpt-oss-120b"  
-GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"  
+# GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"  
 
 IMAGE_SIMILARITY_THRESHOLD = 0.3  
 
