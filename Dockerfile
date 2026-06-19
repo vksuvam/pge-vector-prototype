@@ -15,6 +15,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
+# Copy and make startup script executable
+COPY startup.sh .
+RUN chmod +x startup.sh
+
 # Create necessary directories
 RUN mkdir -p data/images qdrant_storage
 
@@ -22,9 +26,8 @@ RUN mkdir -p data/images qdrant_storage
 EXPOSE 7860
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD python -c "import requests; requests.get('http://localhost:7860/health')" || exit 1
 
-# Run uvicorn on port 7860 (required for HF Spaces)
-# HF Spaces expects the app to listen on 0.0.0.0:7860
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "7860"]
+# Run startup script
+CMD ["./startup.sh"]
