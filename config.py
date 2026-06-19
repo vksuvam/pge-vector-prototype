@@ -38,7 +38,10 @@ DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 # --- Groq Vision Model (for image captioning during ingestion) ---
 # GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
-GROQ_VISION_MODEL = "qwen/qwen3.6-27b"  
+# GROQ_VISION_MODEL = "qwen/qwen3.6-27b"
+# GROQ_VISION_MODEL = "openai/gpt-oss-120b"  
+GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"  
+
 IMAGE_SIMILARITY_THRESHOLD = 0.3  
 
 # --- RAG ---
