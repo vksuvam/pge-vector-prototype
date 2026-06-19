@@ -34,7 +34,7 @@ GROQ_MODELS = {
     "llama-3.1-8b-instant": "Fast, lightweight responses",
     "gemma2-9b-it": "Alternative for benchmarking"
 }
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "qwen/qwen3.6-27b"
 
 # --- Groq Vision Model (for image captioning during ingestion) ---
 # GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
