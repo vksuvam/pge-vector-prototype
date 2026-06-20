@@ -12,9 +12,9 @@ from typing import List, Dict, Any
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+from config import QDRANT_URL, QDRANT_API_KEY
 
 from config import (
-    QDRANT_STORAGE_PATH,
     QDRANT_COLLECTION_NAME,
     QDRANT_IMAGE_COLLECTION_NAME,
     EMBEDDING_MODEL_NAME,
@@ -25,9 +25,11 @@ BATCH_SIZE = 64
 
 
 def get_qdrant_client() -> QdrantClient:
-    Path(QDRANT_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
-    return QdrantClient(path=QDRANT_STORAGE_PATH)
-
+    return QdrantClient(
+        url=QDRANT_URL,
+        api_key=QDRANT_API_KEY,
+        timeout=30
+    )
 
 def get_embedding_model() -> SentenceTransformer:
     return SentenceTransformer(EMBEDDING_MODEL_NAME)
