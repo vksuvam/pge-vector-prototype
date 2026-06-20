@@ -7,25 +7,29 @@ from typing import List, Dict, Any
 
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
+from config import QDRANT_URL, QDRANT_API_KEY
 
 from config import (
-    QDRANT_STORAGE_PATH,
     QDRANT_COLLECTION_NAME,
     EMBEDDING_MODEL_NAME,
-    TOP_K,
+    TOP_K
 )
 
 # Module-level singletons — loaded once, reused across requests
 _qdrant_client: QdrantClient = None
 _embedding_model: SentenceTransformer = None
 
-
 def _get_client() -> QdrantClient:
     global _qdrant_client
     if _qdrant_client is None:
-        _qdrant_client = QdrantClient(path=QDRANT_STORAGE_PATH)
+        print(f"[VectorSearch] Connecting to Qdrant Cloud: {QDRANT_URL}")
+        _qdrant_client = QdrantClient(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
+            timeout=30  # Add timeout for cloud requests
+        )
+        print("[VectorSearch] ✓ Connected to Qdrant Cloud")
     return _qdrant_client
-
 
 def _get_model() -> SentenceTransformer:
     global _embedding_model

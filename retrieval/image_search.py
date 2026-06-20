@@ -19,12 +19,12 @@ from typing import List, Dict, Any
 
 from sentence_transformers import SentenceTransformer
 from qdrant_client import QdrantClient
+from config import QDRANT_URL, QDRANT_API_KEY
 
 from config import (
-    QDRANT_STORAGE_PATH,
     QDRANT_IMAGE_COLLECTION_NAME,
     EMBEDDING_MODEL_NAME,
-    TOP_K_IMAGES,
+    TOP_K_IMAGES
 )
 
 # Module-level singletons
@@ -39,7 +39,11 @@ IMAGE_SIMILARITY_THRESHOLD = 0.35
 def _get_client() -> QdrantClient:
     global _qdrant_client
     if _qdrant_client is None:
-        _qdrant_client = QdrantClient(path=QDRANT_STORAGE_PATH)
+        _qdrant_client = QdrantClient(
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
+            timeout=30
+        )
     return _qdrant_client
 
 

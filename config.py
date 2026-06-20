@@ -5,7 +5,13 @@ load_dotenv()
 # --- Paths ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-QDRANT_STORAGE_PATH = os.path.join(BASE_DIR, "qdrant_storage")
+# QDRANT_STORAGE_PATH = os.path.join(BASE_DIR, "qdrant_storage")
+QDRANT_URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
+if not QDRANT_URL:
+    raise ValueError("QDRANT_URL environment variable not set")
+
 IMAGES_DIR = os.path.join(DATA_DIR, "images")   # extracted PDF images stored here
 
 GREENBOOK_PDF = os.path.join(DATA_DIR, "greenbook-manual-full.pdf")
