@@ -129,19 +129,39 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
                 continue
  
             for img_index, img in enumerate(page_images, 1):
+                # Skip very small images (likely decorative)
+                img_width = img["x1"] - img["x0"]
+                img_height = img["bottom"] - img["top"]
+                
+                if img_width < 100 or img_height < 100:
+                    print(f"[ImageExtractor] Skipping tiny image on page {page_no} ({img_width}x{img_height}px)")
+                    continue
+                
                 # Extract caption from nearby text (no Groq calls)
                 bbox = (img["x0"], img["top"], img["x1"], img["bottom"])
                 caption = _extract_nearby_text(page, bbox)
- 
+
                 if not caption:
                     # Fallback: use a generic caption
                     caption = f"Figure on page {page_no}"
- 
+                
+                # ← ADD THIS: Skip logos and branding images
+                caption_lower = caption.lower()
+                logo_keywords = [
+                    "logo", "trademark", "brand", "copyright", "©", "®",
+                    "pg&e", "pacific gas", "company seal", "insignia",
+                    "mark", "symbol", "emblem"
+                ]
+                
+                if any(keyword in caption_lower for keyword in logo_keywords):
+                    print(f"[ImageExtractor] Skipping logo/branding on page {page_no}: {caption[:50]}...")
+                    continue
+
                 # Crop and save image
                 image_path, image_base64 = _crop_and_save_image(
                     page, bbox, doc_name, page_no, img_index, images_dir
                 )
- 
+
                 if not image_path:
                     continue
  
