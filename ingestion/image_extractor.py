@@ -148,9 +148,7 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
                 # ← ADD THIS: Skip logos and branding images
                 caption_lower = caption.lower()
                 logo_keywords = [
-                    "logo", "trademark", "brand", "copyright", "©", "®",
-                    "pg&e", "pacific gas", "company seal", "insignia",
-                    "mark", "symbol", "emblem"
+                    "logo" "copyright", "©", "®","company seal", "insignia", "emblem"
                 ]
                 
                 if any(keyword in caption_lower for keyword in logo_keywords):
