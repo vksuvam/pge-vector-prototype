@@ -31,7 +31,7 @@ app = FastAPI(
 # CORS — allow React/Next.js frontend during development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://main.d1u5v42dfn8m2v.amplifyapp.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
