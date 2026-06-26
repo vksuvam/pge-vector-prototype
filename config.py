@@ -39,9 +39,9 @@ GROQ_MODELS = {
     "llama-3.3-70b-versatile": "Best quality, general Q&A",
     "GPT-OSS-120B": "Open-weight reasoning model",
     "llama-4-scout-17b-16e-instruct": "Multimodal MoE assistant",
-    "qwen3.6-27b" : "Dense coding & reasoning model"
+    "qwen/qwen3.6-27b" : "Dense coding & reasoning model"
 }
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "qwen/qwen3.6-27b"
 
 # --- Groq Vision Model (for image captioning during ingestion) ---
 # GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"

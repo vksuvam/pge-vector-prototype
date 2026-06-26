@@ -58,6 +58,44 @@ def _is_in_header_or_footer(image_bbox: tuple, page_height: float) -> bool:
     return in_header or in_footer
  
  
+# ---------------------------------------------------------------------------
+# Logo / branding filter
+#
+# Keep this list NARROW — only words that unambiguously mean "this is a logo",
+# not words that happen to appear in captions about real technical content.
+#
+# REMOVED from original list (caused false positives):
+#   "pg&e"        — appears in almost every caption near technical diagrams
+#   "pacific gas" — same reason
+#   "mark"        — too generic ("benchmark", "watermark text", "mark the location")
+#   "symbol"      — too generic ("symbol for transformer", "ground symbol")
+#   "brand"       — too generic ("brand new", "brand of cable")
+#   "insignia"    — rarely appears; not worth the collision risk
+# ---------------------------------------------------------------------------
+LOGO_KEYWORDS = [
+    "logo",
+    "trademark",
+    "copyright",
+    "company seal",
+    "emblem",
+    "©",
+    "®",
+]
+
+# Minimum pixel dimensions — smaller images are decorative / icons
+MIN_IMAGE_WIDTH = 100
+MIN_IMAGE_HEIGHT = 100
+
+
+def _is_logo_caption(caption: str) -> bool:
+    """
+    Returns True only if the caption strongly indicates a logo or branding image.
+    Matching is case-insensitive against LOGO_KEYWORDS.
+    """
+    caption_lower = caption.lower()
+    return any(kw in caption_lower for kw in LOGO_KEYWORDS)
+
+
 def _extract_nearby_text(page, image_bbox: tuple, max_distance: float = 100) -> str:
     """
     Find text lines near the image bbox and return them as a caption.
@@ -76,7 +114,6 @@ def _extract_nearby_text(page, image_bbox: tuple, max_distance: float = 100) -> 
     except Exception:
         return None
  
-    # Find text lines near the image
     nearby_lines = []
  
     for char in chars:
@@ -96,22 +133,26 @@ def _extract_nearby_text(page, image_bbox: tuple, max_distance: float = 100) -> 
     # Sort by y position, then x position (left to right)
     nearby_lines.sort(key=lambda x: (x[0], x[1]))
  
-    # Join characters into a caption (simple concatenation)
     caption = "".join([item[2] for item in nearby_lines]).strip()
- 
-    # Clean up — remove excessive whitespace
     caption = " ".join(caption.split())
  
-    return caption if len(caption) > 5 else None  # Only use if non-trivial
+    return caption if len(caption) > 5 else None
  
  
-def _crop_and_save_image(page, image_bbox: tuple, doc_name: str, page_no: int, img_index: int, images_dir: str) -> tuple[str, str]:
+def _crop_and_save_image(
+    page,
+    image_bbox: tuple,
+    doc_name: str,
+    page_no: int,
+    img_index: int,
+    images_dir: str,
+) -> tuple[str, str]:
     """
-    Crops an image from the page PDF and saves it as PNG, encodes to base64.
-    Returns (image_path, image_base64).
+    Crops an image from the page and saves as PNG, returns (relative_path, base64_data_uri).
+    Returns (None, None) on failure.
     """
     try:
-        bbox = (image_bbox[0], image_bbox[1], image_bbox[2], image_bbox[3])  # (x0, top, x1, bottom)
+        bbox = (image_bbox[0], image_bbox[1], image_bbox[2], image_bbox[3])
         cropped = page.crop(bbox)
         pil_image = cropped.to_image(resolution=150).original
  
@@ -137,9 +178,9 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
  
     Returns list of image records:
     {
-        "image_path":      str,      # data/images/greenbook_p45_img1.png
-        "image_base64":    str,      # data:image/png;base64,... (full data URI)
-        "caption":         str,      # extracted from text near image
+        "image_path":      str,      # data/images/greenbook_p45_img1.png  (relative)
+        "image_base64":    str,      # data:image/png;base64,...
+        "caption":         str,
         "page_no":         int,
         "doc_name":        str,
         "image_id":        str,      # greenbook_p45_img1
@@ -161,11 +202,12 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
             page_height = page.height  # PDF coordinate space height
  
             try:
-                page_images = page.images  # list of image dicts from pdfplumber
+                page_images = page.images
             except Exception:
                 continue
  
             for img_index, img in enumerate(page_images, 1):
+                # Extract caption from nearby text (no Groq calls)
                 bbox = (img["x0"], img["top"], img["x1"], img["bottom"])
                 
                 # Skip images in header/footer zones (spatial filtering)
@@ -175,16 +217,23 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
  
                 # Extract caption from nearby text (no Groq calls)
                 caption = _extract_nearby_text(page, bbox)
- 
+
                 if not caption:
-                    # Fallback: use a generic caption
                     caption = f"Figure on page {page_no}"
- 
+
+                # Skip only if caption is unambiguously a logo/branding label
+                if _is_logo_caption(caption):
+                    print(
+                        f"[ImageExtractor] Skipping logo/branding on page {page_no}: "
+                        f"{caption[:60]}..."
+                    )
+                    continue
+
                 # Crop and save image
                 image_path, image_base64 = _crop_and_save_image(
                     page, bbox, doc_name, page_no, img_index, images_dir
                 )
- 
+
                 if not image_path:
                     continue
  
@@ -199,17 +248,16 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
                     "image_id": image_id,
                 })
  
-                print(f"[ImageExtractor] {doc_name} page {page_no}: extracted image {img_index}")
-                print(f"                Caption: {caption[:80]}...")
+                print(f"[ImageExtractor] {doc_name} p{page_no}: img{img_index} — {caption[:80]}")
  
     print(f"[ImageExtractor] {doc_name}: {len(image_records)} images extracted")
     return image_records
  
  
-def extract_images_from_all_pdfs(pdf_paths: List[str], images_dir: str = "data/images") -> List[Dict[str, Any]]:
-    """
-    Extract images from multiple PDFs using nearby text captions.
-    """
+def extract_images_from_all_pdfs(
+    pdf_paths: List[str], images_dir: str = "data/images"
+) -> List[Dict[str, Any]]:
+    """Extract images from multiple PDFs."""
     all_records = []
     for pdf_path in pdf_paths:
         try:
@@ -218,4 +266,6 @@ def extract_images_from_all_pdfs(pdf_paths: List[str], images_dir: str = "data/i
         except Exception as e:
             print(f"[ImageExtractor] Error processing {pdf_path}: {e}")
             continue
+
+    print(f"[ImageExtractor] Total images across all PDFs: {len(all_records)}")
     return all_records

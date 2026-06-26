@@ -25,9 +25,7 @@ from config import (
     QDRANT_API_KEY,
     QDRANT_IMAGE_COLLECTION_NAME,
     EMBEDDING_MODEL_NAME,
-    TOP_K_IMAGES,
-    IMAGE_SIMILARITY_THRESHOLD,
-    BASE_DIR,  # absolute path to project root
+    TOP_K_IMAGES
 )
 
 # Module-level singletons
@@ -60,28 +58,7 @@ def _image_collection_exists(client: QdrantClient) -> bool:
     )
 
 
-def _resolve_image_path(stored_path: str) -> str:
-    """
-    Convert stored relative path like "data/images/greenbook_p3_img1.png"
-    to absolute path anchored at BASE_DIR.
-
-    Why: image_path is stored as relative during ingestion. At query time,
-    the working directory may differ (e.g., on HuggingFace), so
-    os.path.exists("data/images/...") fails silently. Anchoring to BASE_DIR
-    makes the lookup reliable regardless of cwd.
-
-    Args:
-        stored_path: relative or absolute path from Qdrant payload
-
-    Returns:
-        absolute path to the image file
-    """
-    if os.path.isabs(stored_path):
-        return stored_path
-    return os.path.join(BASE_DIR, stored_path)
-
-
-def _encode_image_file(abs_path: str) -> str:
+def _encode_image_file(image_path: str) -> str:
     """Read image from disk and return base64 data URI."""
     with open(abs_path, "rb") as f:
         raw = f.read()
@@ -104,12 +81,11 @@ def retrieve_images(query: str, top_k: int = TOP_K_IMAGES) -> List[Dict[str, Any
 
     Returns empty list if:
     - Image collection doesn't exist yet (ingestion not run)
-    - No captions are similar enough to the query (below IMAGE_SIMILARITY_THRESHOLD)
+    - No captions are similar enough to the query
     - Image file missing from disk
     """
     client = _get_client()
 
-    # Gracefully handle case where image ingestion hasn't been run
     if not _image_collection_exists(client):
         print("[ImageSearch] Image collection not found — skipping image retrieval")
         return []
@@ -126,25 +102,16 @@ def retrieve_images(query: str, top_k: int = TOP_K_IMAGES) -> List[Dict[str, Any
 
     images = []
     for hit in results:
-        score = hit.score
-
-        # Filter by similarity threshold (from config.py)
-        if score < IMAGE_SIMILARITY_THRESHOLD:
-            print(
-                f"[ImageSearch] Skipping low-score image "
-                f"(score={score:.4f} < threshold={IMAGE_SIMILARITY_THRESHOLD})"
-            )
+        # Filter by similarity threshold
+        if hit.score < IMAGE_SIMILARITY_THRESHOLD:
             continue
 
         payload = hit.payload
-        stored_path = payload.get("image_path", "")
-
-        # Resolve relative path to absolute (critical for HuggingFace compatibility)
-        abs_path = _resolve_image_path(stored_path)
+        image_path = payload.get("image_path", "")
 
         # Skip if image file was deleted or moved
-        if not os.path.exists(abs_path):
-            print(f"[ImageSearch] Image file not found on disk: {abs_path}")
+        if not os.path.exists(image_path):
+            print(f"[ImageSearch] Image file not found: {image_path}")
             continue
 
         try:
