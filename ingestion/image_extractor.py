@@ -4,12 +4,14 @@ Extracts images from PDFs and associates them with captions from nearby text.
  
 Strategy:
 1. For each page, find all images via pdfplumber
-2. Look at text above/below the image bbox — that's the caption
-3. Crop image to bbox, save as PNG, encode as base64
-4. Store (image_path, caption, page_no, doc_name, image_id) in image_records
-5. These records are later embedded and stored in Qdrant for caption-based search
+2. Skip images in header/footer zones (spatial filtering)
+3. Look at text above/below the image bbox — that's the caption
+4. Crop image to bbox, save as PNG, encode as base64
+5. Store (image_path, caption, page_no, doc_name, image_id) in image_records
+6. These records are later embedded and stored in Qdrant for caption-based search
  
 Caption extraction uses PDF text positioning only — NO Groq vision calls.
+Header/footer filtering uses page dimensions — headers are in top ~10%, footers in bottom ~10%.
 """
  
 import os
@@ -20,6 +22,40 @@ import base64
 import pdfplumber
 from PIL import Image
 import io
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Header/Footer Zones
+#
+# Most PDF headers/footers occupy the top and bottom ~10% of the page.
+# Images in these zones are typically logos, page numbers, company branding.
+# We filter them out spatially rather than by keyword to avoid false positives.
+# ─────────────────────────────────────────────────────────────────────────────
+
+HEADER_ZONE_PERCENT = 10  # Top 10% of page is header
+FOOTER_ZONE_PERCENT = 10  # Bottom 10% of page is footer
+
+
+def _is_in_header_or_footer(image_bbox: tuple, page_height: float) -> bool:
+    """
+    Returns True if the image is in the header or footer zone.
+    
+    Args:
+        image_bbox: (x0, top, x1, bottom) in PDF coordinates
+        page_height: height of the page in points
+    
+    Returns:
+        True if image center is in top HEADER_ZONE_PERCENT or bottom FOOTER_ZONE_PERCENT of page
+    """
+    _, top, _, bottom = image_bbox
+    image_center_y = (top + bottom) / 2
+    
+    header_threshold = page_height * (HEADER_ZONE_PERCENT / 100)
+    footer_threshold = page_height * (1 - FOOTER_ZONE_PERCENT / 100)
+    
+    in_header = image_center_y < header_threshold
+    in_footer = image_center_y > footer_threshold
+    
+    return in_header or in_footer
  
  
 def _extract_nearby_text(page, image_bbox: tuple, max_distance: float = 100) -> str:
@@ -122,6 +158,7 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
  
         for page_idx, page in enumerate(pdf.pages):
             page_no = page_idx + 1
+            page_height = page.height  # PDF coordinate space height
  
             try:
                 page_images = page.images  # list of image dicts from pdfplumber
@@ -129,8 +166,14 @@ def extract_images_from_pdf(pdf_path: str, images_dir: str) -> List[Dict[str, An
                 continue
  
             for img_index, img in enumerate(page_images, 1):
-                # Extract caption from nearby text (no Groq calls)
                 bbox = (img["x0"], img["top"], img["x1"], img["bottom"])
+                
+                # Skip images in header/footer zones (spatial filtering)
+                if _is_in_header_or_footer(bbox, page_height):
+                    print(f"[ImageExtractor] Skipping image in header/footer on page {page_no}")
+                    continue
+ 
+                # Extract caption from nearby text (no Groq calls)
                 caption = _extract_nearby_text(page, bbox)
  
                 if not caption:
